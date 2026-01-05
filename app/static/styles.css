@@ -1,0 +1,85 @@
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+/* Retro Terminal Variables */
+:root {
+  --color-bg: #1a1a1a;
+  --color-primary: #ffb000; /* Amber */
+  --color-secondary: #33ff00; /* Terminal Green */
+  --color-danger: #ff3300;
+  --font-mono: 'VT323', monospace;
+}
+
+body {
+    font-family: var(--font-mono);
+    background-color: var(--color-bg);
+    color: var(--color-primary);
+    overflow-x: hidden;
+}
+
+/* CRT Scanline Effect */
+.scanlines {
+    background: linear-gradient(
+        to bottom,
+        rgba(255,255,255,0),
+        rgba(255,255,255,0) 50%,
+        rgba(0,0,0,0.2) 50%,
+        rgba(0,0,0,0.2)
+    );
+    background-size: 100% 4px;
+    pointer-events: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 50;
+}
+
+/* Flicker Animation */
+@keyframes flicker {
+    0% { opacity: 0.97; }
+    5% { opacity: 0.95; }
+    10% { opacity: 0.9; }
+    15% { opacity: 0.95; }
+    20% { opacity: 0.99; }
+    25% { opacity: 0.95; }
+    30% { opacity: 0.9; }
+    35% { opacity: 0.96; }
+    40% { opacity: 0.98; }
+    45% { opacity: 0.95; }
+    50% { opacity: 0.99; }
+    55% { opacity: 0.93; }
+    60% { opacity: 0.9; }
+    65% { opacity: 0.96; }
+    70% { opacity: 1; }
+    75% { opacity: 0.97; }
+    80% { opacity: 0.92; }
+    85% { opacity: 0.96; }
+    90% { opacity: 0.9; }
+    95% { opacity: 0.96; }
+    100% { opacity: 0.94; }
+}
+
+.terminal-flicker {
+    animation: flicker 0.15s infinite;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+}
+::-webkit-scrollbar-track {
+    background: #111; 
+}
+::-webkit-scrollbar-thumb {
+    background: var(--color-primary); 
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #e69c00; 
+}
+
+/* Utility classes */
+.text-amber { color: var(--color-primary); }
+.text-green { color: var(--color-secondary); }
+.border-amber { border-color: var(--color-primary); }
+.bg-amber-dim { background-color: rgba(255, 176, 0, 0.1); }

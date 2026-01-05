@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block header_left %}
+<!-- Hamburger Menu -->
+<button @click="showSidebar = true" class="text-amber hover:text-white text-3xl font-bold px-2 focus:outline-none">
+    ☰
+</button>
+{% endblock %}
+
+{% block content %}
+<script>
+    const CAT_STRUCTURE = {{ cat_structure | tojson }};
+    const CATEGORIES_DB = {
+        {% for cat in categories %}
+    "{{ cat.slug }}": "{{ cat.id }}",
+        {% endfor %}
+    };
+    const ITEMS_DATA = {{ items | tojson }};
+
+    function inventoryApp() {
+        return {
+            // showSidebar is now inherited from body
+            currentTab: 'all',
+            showDetail: false,
+            // Mode: 'add' or 'edit'
+            mode: 'add',
+
+            // Current Item Data
+            currentItem: {
+                id: null,
+                category: '',
+                subcategory: '',
+                name: '',
+                quantity: 1,
+                target_quantity: 10,
+                expiry_date: ''
+            },
+
+            init() {
+                this.resetForm();
+            },
+
+            resetForm() {
+                this.currentItem = {
+                    id: null,
+                    category: '',
+                    subcategory: '',
+                    name: '',
+                    quantity: 1,
+                    target_quantity: 10,
+                    expiry_date: '1970-01-01'
+                };
+            },
+
+            getSubcategories(catKey) {
+                if (!catKey || !CAT_STRUCTURE[catKey]) return {};
+                return CAT_STRUCTURE[catKey].subs;
+            },
+
+            openAddModal() {
+                this.mode = 'add';
+                this.resetForm();
+                this.showDetail = true;
+            },
+
+            openEditModalId(id) {
+                const item = ITEMS_DATA.find(i => i.id === id);
+                if (item) this.openEditModal(item);
+            },
+
+            openEditModal(item) {
+                this.mode = 'edit';
+                // Find category key by ID
+                let catKey = '';
+                for (let k in CATEGORIES_DB) {
+                    if (CATEGORIES_DB[k] === item.category_id) catKey = k;
+                }
+
+                this.currentItem = {
+                    id: item.id,
+                    category: catKey,
+                    subcategory: item.subcategory,
+                    name: item.name,
+                    quantity: item.quantity,
+                    target_quantity: item.target_quantity || 10,
+                    expiry_date: item.expiry_date || '1970-01-01'
+                };
+                this.showDetail = true;
+            },
+
+            adjustQty(delta) {
+                let v = parseInt(this.currentItem.quantity) || 0;
+                v += delta;
+                if (v < 0) v = 0;
+                this.currentItem.quantity = v;
+            },
+
+            async saveItem() {
+                if (!this.currentItem.category) {
+                    alert('Category required');
+                    return;
+                }
+
+                // LOGIC: If Quantity is 0, we treat this as a DELETE operation
+                const qty = parseInt(this.currentItem.quantity);
+                if (qty === 0) {
+                    if (this.mode === 'edit' && this.currentItem.id) {
+                        return this.deleteItem(); // Reuse the delete function
+                    }
+                }
+
+                const catId = parseInt(CATEGORIES_DB[this.currentItem.category]);
+                const payload = {
+                    name: this.currentItem.name,
+                    quantity: qty,
+                    target_quantity: parseInt(this.currentItem.target_quantity),
+                    subcategory: this.currentItem.subcategory,
+                    expiry_date: this.currentItem.expiry_date || null,
+                    category_id: catId,
+                    icon_type: "pack_generic.png"
+                };
+
+                try {
+                    let url = '/api/items/';
+                    if (this.mode === 'edit') {
+                        // Delete old first (lazy update)
+                        await fetch(`/api/items/${this.currentItem.id}`, { method: 'DELETE' });
+                    }
+
+                    const res = await fetch('/api/items/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (res.ok) {
+                        window.location.reload();
+                    } else {
+                        alert("ERROR SAVING");
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert("Network Error");
+                }
+            },
+
+            async deleteItem() {
+                if (!confirm('DELETE ITEM?')) return;
+                const id = parseInt(this.currentItem.id);
+
+                try {
+                    const res = await fetch(`/api/items/${id}`, { method: 'DELETE' });
+
+                    if (res.ok) {
+                        window.location.reload();
+                    } else {
+                        const err = await res.text();
+                        alert("DELETE FAILED: " + err);
+                    }
+                } catch (e) {
+                    alert("Delete Error: " + e.message);
+                }
+            }
+        }
+    }
+</script>
+
+<div x-data="inventoryApp()" class="min-h-full">
+
+    <!-- Sidebar (Drawer) -->
+    <!-- Sidebar (Drawer) - RETRO OS STYLE -->
+    <div x-show="showSidebar" style="display: none;" class="fixed inset-0 z-[100] flex">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-black bg-opacity-90 backdrop-blur-sm" @click="showSidebar = false"
+            x-transition.opacity></div>
+
+        <!-- Drawer Content (Retro Border & Shadow) -->
+        <div class="relative bg-darkBg border-r-2 border-amber w-[85%] max-w-[300px] h-full shadow-[0_0_50px_rgba(255,176,0,0.5)] flex flex-col p-4 z-[101] transform transition-transform"
+            x-transition:enter="transition ease-out duration-300" x-transition:enter-start="-translate-x-full"
+            x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full">
+
+            <!-- Sidebar Header (Solid Amber Style) -->
+            <div class="flex justify-between items-center mb-8 bg-amber text-black p-2 border-b-2 border-amber">
+                <span class="font-bold tracking-widest text-xl">SYS.MENU</span>
+                <button @click="showSidebar = false"
+                    class="text-black hover:text-white hover:bg-black border-2 border-black px-2 font-bold transition-colors">X</button>
+            </div>
+
+            <!-- Add Button (Smaller, Neon Blue Square) -->
+            {% if user and user.is_admin %}
+            <button @click="openAddModal(); showSidebar = false"
+                class="w-full border-2 border-neonBlue text-neonBlue font-bold py-2 uppercase tracking-widest hover:bg-white/10 hover:text-white transition-colors shadow-[0_0_10px_#00ccff] mb-4 text-lg flex items-center justify-center gap-4">
+                ДОБАВИТЬ
+            </button>
+
+            <!-- Divider after Add Button -->
+            <div class="h-0.5 bg-amber/30 mb-4"></div>
+            {% endif %}
+
+            <!-- Categories -->
+            <div class="flex flex-col gap-3 flex-grow overflow-y-auto px-1">
+                {% for cat in categories %}
+                <button @click="currentTab = '{{ cat.id }}'; showSidebar = false"
+                    :class="currentTab === '{{ cat.id }}' ? 'bg-amber text-black shadow-[0_0_10px_#ffb000]' : 'border border-amber text-amber hover:bg-amber/20'"
+                    class="w-full py-3 uppercase font-bold text-sm transition-all text-left px-4 flex items-center gap-3">
+                    {{ cat.name }}
+                </button>
+                {% endfor %}
+
+                <!-- All Items pushed to bottom (Lifted slightly) -->
+                <button @click="currentTab = 'all'; showSidebar = false"
+                    :class="currentTab === 'all' ? 'bg-amber text-black shadow-[0_0_10px_#ffb000]' : 'border border-amber text-amber hover:bg-amber/20'"
+                    class="mt-auto mb-1 w-full py-3 uppercase font-bold text-sm transition-all text-left px-4 flex items-center gap-3">
+                    ВСЕ ЭЛЕМЕНТЫ
+                </button>
+            </div>
+
+            <!-- Footer: Shopping List Stub -->
+            <div class="mt-auto border-t-2 border-amber pt-6 pb-8">
+                <button
+                    class="w-full border border-gray-600 text-gray-500 py-3 uppercase text-xs cursor-not-allowed border-dashed">
+                    [ СПИСОК_ПОКУПОК_ВЫКЛ ]
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 pb-20 pt-2">
+        {% for item in items %}
+        <div x-show="currentTab === 'all' || currentTab === '{{ item.category_id }}'"
+            @click="openEditModalId({{ item.id }})"
+            class="aspect-square border-2 border-amber bg-black relative group hover:bg-[#222] transition-colors cursor-pointer overflow-hidden shadow-[0_0_5px_rgba(255,176,0,0.3)]">
+
+            <!-- Icon Full Size -->
+            <img src="/static/icons/{{ item.icon_type }}?v=2" class="w-full h-full object-contain p-4"
+                onerror="this.src='/static/icons/pack_generic.png'">
+
+            <!-- Quantity Overlay -->
+            <div
+                class="absolute bottom-0 right-0 bg-amber text-black px-2 py-0 text-xl font-bold leading-none border-t border-l border-black">
+                {{ item.quantity }}
+            </div>
+
+            <!-- Name Overlay (Optional, tiny) -->
+            <div class="absolute top-0 left-0 w-full bg-black bg-opacity-70 text-amber text-[10px] px-1 truncate">
+                {{ item.name }}
+            </div>
+
+            {% if item.expiry_date %}
+            <div class="absolute top-4 right-0 text-[10px] text-gray-400 bg-black px-1">
+                {{ item.expiry_date }}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Detail/Edit Modal -->
+    <div x-show="showDetail" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        x-transition.opacity>
+
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black bg-opacity-90 backdrop-blur-sm" @click="showDetail = false"></div>
+
+        <!-- Modal Card (Retro OS Style - Updated Colors) -->
+        <div
+            class="relative bg-darkBg border-2 border-amber w-full max-w-sm shadow-[0_0_50px_rgba(255,176,0,0.5)] flex flex-col animate-scale-in">
+
+            <!-- Window Header -->
+            <div
+                class="bg-amber text-black px-2 py-1 font-bold text-sm tracking-widest flex justify-between items-center select-none">
+                <span x-text="mode === 'add' ? 'SYS.ADD_ITEM' : 'SYS.ITEM_DETAILS'"></span>
+                <button @click="showDetail = false"
+                    class="hover:bg-black hover:text-amber px-1 text-lg font-bold">X</button>
+            </div>
+
+            <div class="p-6 flex flex-col gap-6">
+                <!-- Name Field (Neon Blue) -->
+                <div class="border-b border-neonBlue">
+                    <label class="text-[10px] text-neonBlue block mb-1 opacity-70">ITEM NAME</label>
+                    <input type="text" x-model="currentItem.name"
+                        class="w-full bg-transparent text-neonBlue text-xl font-bold focus:outline-none placeholder-blue-900 uppercase tracking-wider">
+                </div>
+
+                <!-- Drodowns -->
+                <div class="flex gap-4">
+                    <div class="w-1/2">
+                        <label class="text-[10px] text-amber block mb-1 opacity-70">CATEGORY</label>
+                        <select x-model="currentItem.category"
+                            class="w-full bg-[#222] border border-amber text-amber text-xs p-2 focus:outline-none">
+                            <option value="">-- SELECT --</option>
+                            {% for key, val in cat_structure.items() %}
+                            <option value="{{ key }}">{{ val.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="w-1/2">
+                        <label class="text-[10px] text-amber block mb-1 opacity-70">TYPE</label>
+                        <select x-model="currentItem.subcategory"
+                            class="w-full bg-[#222] border border-amber text-amber text-xs p-2 focus:outline-none">
+                            <template x-if="currentItem.category">
+                                <template x-for="(name, key) in getSubcategories(currentItem.category)">
+                                    <option :value="key" x-text="name"></option>
+                                </template>
+                            </template>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Expiry (Neon Blue) -->
+                <div>
+                    <label class="text-[10px] text-neonBlue block mb-1 opacity-70">EXPIRY DATE</label>
+                    <input type="date" x-model="currentItem.expiry_date"
+                        class="w-full bg-[#222] text-neonBlue p-2 border border-neonBlue text-sm uppercase">
+                </div>
+
+                <!-- Counter (Rectangular Outline Buttons << >>) -->
+                <div>
+                    <label class="text-[10px] text-white block mb-2 opacity-50 text-center">QUANTITY CONTROL</label>
+                    <div class="flex items-center justify-center gap-4">
+                        <!-- Decrement << -->
+                        <button @click="adjustQty(-1)"
+                            class="w-16 h-10 border-2 border-neonBlue text-neonBlue font-bold text-lg hover:bg-neonBlue hover:text-black transition-colors flex items-center justify-center">
+                            &lt;&lt;
+                        </button>
+
+                        <div class="text-4xl font-mono w-20 text-center text-white" x-text="currentItem.quantity"></div>
+
+                        <!-- Increment >> -->
+                        <button @click="adjustQty(1)"
+                            class="w-16 h-10 border-2 border-neonBlue text-neonBlue font-bold text-lg hover:bg-neonBlue hover:text-black transition-colors flex items-center justify-center">
+                            &gt;&gt;
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex flex-col gap-3 mt-4">
+                    <!-- Save (Amber) -->
+                    <button @click="saveItem()"
+                        class="w-full bg-amber text-black font-bold py-3 uppercase tracking-widest hover:bg-white transition-colors shadow-[0_0_15px_#ffb000]">
+                        SAVE DATA
+                    </button>
+
+                    <!-- Delete (Red Outline) -->
+                    <template x-if="mode === 'edit'">
+                        <button @click="deleteItem()"
+                            class="w-full border-2 border-[#ff3300] text-[#ff3300] bg-transparent font-bold text-xs py-2 uppercase hover:bg-[#ff3300] hover:text-black transition-colors">
+                            DELETE RECORD
+                        </button>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Alpine JS -->
+<script src="//unpkg.com/alpinejs" defer></script>
+{% endblock %}

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warehouse 21 - Terminal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        amber: '#ffb000',
+                        terminalGreen: '#33ff00',
+                        neonBlue: '#00ccff',
+                        darkBg: '#1a1a1a',
+                    },
+                    fontFamily: {
+                        mono: ['VT323', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body x-data="{ showSidebar: false, showChat: false }"
+    class="bg-[#1a1a1a] text-[#ffb000] min-h-screen relative font-mono text-xl">
+
+    <!-- Scanline Overlay -->
+    <div class="scanlines"></div>
+
+    <!-- Main Container -->
+    <div class="relative z-10 container mx-auto p-4 md:p-8 terminal-flicker h-screen flex flex-col">
+
+        <!-- Header (Partial for layout control) -->
+        <header class="flex justify-between items-center border-b-2 border-[#ffb000] pb-4 mb-4 gap-4">
+            <!-- Left: Burger + Title -->
+            <div class="flex items-center gap-2 md:gap-4 flex-grow min-w-0">
+                <div id="header-left" class="flex-shrink-0">
+                    {% block header_left %}{% endblock %}
+                </div>
+                <h1
+                    class="text-lg md:text-3xl uppercase tracking-widest text-shadow text-amber whitespace-nowrap overflow-hidden text-ellipsis">
+                    Warehouse 21</h1>
+            </div>
+
+            <!-- Right: AI Chat Button -->
+            <div class="flex-shrink-0">
+                {% if request.url.path == '/' %}
+                {% include "components/ai_overlay.html" ignore missing %}
+                {% endif %}
+            </div>
+        </header>
+
+        <!-- Dynamic Content -->
+        <main class="flex-grow overflow-auto">
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- Footer -->
+        <footer
+            class="mt-8 border-t-2 border-[#ffb000] pt-4 flex justify-between items-center text-sm opacity-70 pb-20">
+            <div>SYS.STATUS: ONLINE</div>
+            <div>
+                {% if request.session.get("user_id") %}
+                ADM.MODE [ <a href="/logout" class="hover:text-white">LO</a> ]
+                {% else %}
+                GST.MODE [ <a href="/login" class="hover:text-white">LI</a> ]
+                {% endif %}
+            </div>
+        </footer>
+    </div>
+</body>
+
+</html>

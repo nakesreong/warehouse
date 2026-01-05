@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+jinja2
+python-multipart
+httpx
+google-generativeai
+sqlalchemy
+python-dotenv
+aiofiles
+itsdangerous
