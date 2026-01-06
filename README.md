@@ -10,7 +10,7 @@ A retro-futuristic warehouse management system.
     ```
 2.  Run the application:
     ```bash
-    python -m app.main
+    uvicorn app.main:app --reload
     ```
     (Or `uvicorn app.main:app --reload` depending on your setup)
 
