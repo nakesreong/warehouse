@@ -16,12 +16,29 @@ class User(UserBase):
         from_attributes = True
 
 # Category Schemas
+class SubCategoryBase(BaseModel):
+    name: str
+    slug: str
+    icon_path: str = "pack_generic.png"
+
+class SubCategoryCreate(SubCategoryBase):
+    category_id: int
+
+class SubCategory(SubCategoryBase):
+    id: int
+    category_id: int
+
+    class Config:
+        from_attributes = True
+
+# Category Schemas
 class CategoryBase(BaseModel):
     name: str
     slug: str
 
 class Category(CategoryBase):
     id: int
+    subcategories: List[SubCategory] = []
 
     class Config:
         from_attributes = True

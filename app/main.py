@@ -8,14 +8,13 @@ import uvicorn
 import os
 from . import models, database, crud, deps, mappings, schemas
 from .database import engine
-from .routers import auth, items, ai
+from .routers import auth, items, ai, subcategories
 
 # Create tables
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Warehouse 21")
 
-# Add Session Middleware (Secret key should be in .env in prod)
 # Add Session Middleware (Secret key should be in .env in prod)
 # https_only=False allows usage on localhost and HTTP over LAN
 app.add_middleware(SessionMiddleware, secret_key="secret-key-warehouse-21", https_only=False, same_site="lax")
@@ -30,6 +29,7 @@ templates = Jinja2Templates(directory="app/templates")
 app.include_router(auth.router)
 app.include_router(items.router)
 app.include_router(ai.router)
+app.include_router(subcategories.router)
 
 # Initialize Categories
 @app.on_event("startup")
@@ -53,12 +53,29 @@ async def read_root(request: Request, db: Session = Depends(deps.get_db)):
     from fastapi.encoders import jsonable_encoder
     items_data = [jsonable_encoder(schemas.Item.from_orm(i)) for i in items_orm]
     
+    # Build CAT_STRUCTURE dynamically from DB
+    cat_structure = {}
+    for cat in categories:
+        subs = {}
+        for sub in cat.subcategories:
+            subs[sub.slug] = {
+                "id": sub.id,  # Add ID for CRUD operations
+                "name": sub.name,
+                "icon": sub.icon_path
+            }
+        
+        cat_structure[cat.slug] = {
+            "name": cat.name,
+            "id": cat.id,
+            "subs": subs
+        }
+
     return templates.TemplateResponse("index.html", {
         "request": request, 
         "items": items_data, 
         "categories": categories,
         "user": current_user,
-        "cat_structure": mappings.CATEGORY_STRUCTURE
+        "cat_structure": cat_structure
     })
 
 if __name__ == "__main__":

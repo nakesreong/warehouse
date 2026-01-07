@@ -1,134 +1,66 @@
 <!-- AI Chat Component -->
-<div x-data="chatApp" @keydown.escape.window="showChat = false">
 
-    <!-- Trigger Button (In Header) -->
-    <!-- This replaces the button in the header if included there. 
-         But since we include this file in the header, we render the button here. 
-         The Modal will be teleported to body. -->
+<!-- Trigger Button (In Header) -->
+<button @click="showChat = !showChat"
+    class="bg-[#ffb000] text-black w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center border-2 md:border-4 border-[#1a1a1a] shadow-[0_0_15px_#ffb000] hover:scale-110 transition-transform z-10 relative">
+    <span class="text-xl md:text-2xl">⚡</span>
+</button>
 
-    <button @click="showChat = !showChat"
-        class="bg-[#ffb000] text-black w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center border-2 md:border-4 border-[#1a1a1a] shadow-[0_0_15px_#ffb000] hover:scale-110 transition-transform z-10 relative">
-        <span class="text-xl md:text-2xl">⚡</span>
-    </button>
+<!-- Chat Modal (Teleported to Body for correct overlay) -->
+<template x-teleport="body">
+    <div x-show="showChat" style="display: none;"
+        class="fixed inset-0 z-[200] flex items-end justify-end sm:items-center sm:justify-center p-4 pointer-events-none">
 
-    <!-- Chat Modal (Teleported to Body for correct overlay) -->
-    <template x-teleport="body">
-        <div x-show="showChat" style="display: none;"
-            class="fixed inset-0 z-[200] flex items-end justify-end sm:items-center sm:justify-center p-4 pointer-events-none">
+        <!-- Window Container -->
+        <div class="pointer-events-auto bg-[#1a1a1a] border-2 border-[#ffb000] w-full max-w-lg h-[60vh] md:h-[600px] flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.8)] relative rounded-t-lg md:rounded-lg overflow-hidden"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="translate-y-full opacity-0 scale-95"
+            x-transition:enter-end="translate-y-0 opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="translate-y-0 opacity-100 scale-100"
+            x-transition:leave-end="translate-y-full opacity-0 scale-95">
 
-            <!-- Backdrop (Click to close) -->
-            <!-- We make the modal container pointer-events-none so it doesn't block clicks 
-                 But we want a backdrop? Maybe no backdrop for "Overlay" feel? 
-                 User asked for it to be "on top". Let's use a standard modal approach but positioned bottom-right or center. 
-                 The screenshot showed it as a large window. Let's make it a proper window. -->
+            <!-- Header -->
+            <div class="bg-[#ffb000] text-black p-2 font-bold flex justify-between items-center text-lg lg:text-xl">
+                <span>STOCKMAN.AI [V1.0]</span>
+                <button @click="showChat = false"
+                    class="hover:bg-black hover:text-[#ffb000] px-2 font-bold transition-colors">X</button>
+            </div>
 
-            <!-- Window Container -->
-            <div class="pointer-events-auto bg-[#1a1a1a] border-2 border-[#ffb000] w-full max-w-lg h-[60vh] md:h-[600px] flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.8)] relative rounded-t-lg md:rounded-lg overflow-hidden"
-                x-transition:enter="transition ease-out duration-300"
-                x-transition:enter-start="translate-y-full opacity-0 scale-95"
-                x-transition:enter-end="translate-y-0 opacity-100 scale-100"
-                x-transition:leave="transition ease-in duration-200"
-                x-transition:leave-start="translate-y-0 opacity-100 scale-100"
-                x-transition:leave-end="translate-y-full opacity-0 scale-95">
-
-                <!-- Header -->
-                <div class="bg-[#ffb000] text-black p-2 font-bold flex justify-between items-center text-lg lg:text-xl">
-                    <span>STOCKMAN.AI [V1.0]</span>
-                    <button @click="showChat = false"
-                        class="hover:bg-black hover:text-[#ffb000] px-2 font-bold transition-colors">X</button>
-                </div>
-
-                <!-- Chat History -->
-                <div class="flex-grow p-4 overflow-y-auto space-y-4 font-mono text-sm lg:text-base" id="chat-history">
-                    <template x-for="msg in messages">
-                        <div>
-                            <div :class="msg.role === 'user' ? 'text-right' : 'text-left text-[#33ff00]'">
-                                <span class="opacity-50 text-xs uppercase"
-                                    x-text="msg.role === 'user' ? 'YOU:' : 'AI:'"></span>
-                                <div x-text="msg.text"
-                                    class="bg-opacity-10 p-2 inline-block rounded max-w-[85%] break-words"
-                                    :class="msg.role === 'user' ? 'bg-[#ffb000] text-[#ffb000] border border-[#ffb000]' : 'bg-[#33ff00] text-[#33ff00] border border-[#33ff00]'">
-                                </div>
+            <!-- Chat History -->
+            <div class="flex-grow p-4 overflow-y-auto space-y-4 font-mono text-sm lg:text-base" id="chat-history">
+                <template x-for="msg in chatMessages">
+                    <div>
+                        <div :class="msg.role === 'user' ? 'text-right' : 'text-left text-[#33ff00]'">
+                            <span class="opacity-50 text-xs uppercase"
+                                x-text="msg.role === 'user' ? 'YOU:' : 'AI:'"></span>
+                            <div x-text="msg.text"
+                                class="bg-opacity-10 p-2 inline-block rounded max-w-[85%] break-words"
+                                :class="msg.role === 'user' ? 'bg-[#ffb000] text-[#ffb000] border border-[#ffb000]' : 'bg-[#33ff00] text-[#33ff00] border border-[#33ff00]'">
                             </div>
                         </div>
-                    </template>
-                    <div x-show="messages.length === 0" class="text-center opacity-50 mt-10">
-                        > SYSTEM READY.<br>
-                        > AWAITING ORDERS...
                     </div>
-                    <div x-show="loading" class="text-[#33ff00]">
-                        > PROCESSING... <span class="animate-pulse">_</span>
-                    </div>
+                </template>
+                <div x-show="chatMessages.length === 0" class="text-center opacity-50 mt-10">
+                    > SYSTEM READY.<br>
+                    > AWAITING ORDERS...
                 </div>
-
-                <!-- Input -->
-                <div class="p-2 border-t border-[#ffb000] bg-[#1a1a1a]">
-                    <form @submit.prevent="sendMessage()" class="flex gap-2">
-                        <input x-model="input" type="text" placeholder="Type command..."
-                            class="flex-grow bg-[#111] text-[#ffb000] p-3 focus:outline-none border-b border-[#ffb000] font-mono">
-                        <button type="submit"
-                            class="text-[#ffb000] hover:text-black hover:bg-[#ffb000] px-6 font-bold border border-[#ffb000] transition-colors">
-                            &crarr;
-                        </button>
-                    </form>
+                <div x-show="chatLoading" class="text-[#33ff00]">
+                    > PROCESSING... <span class="animate-pulse">_</span>
                 </div>
             </div>
+
+            <!-- Input -->
+            <div class="p-2 border-t border-[#ffb000] bg-[#1a1a1a]">
+                <form @submit.prevent="sendChatMessage()" class="flex gap-2">
+                    <input x-model="chatInput" type="text" placeholder="Type command..."
+                        class="flex-grow bg-[#111] text-[#ffb000] p-3 focus:outline-none border-b border-[#ffb000] font-mono">
+                    <button type="submit"
+                        class="text-[#ffb000] hover:text-black hover:bg-[#ffb000] px-6 font-bold border border-[#ffb000] transition-colors">
+                        &crarr;
+                    </button>
+                </form>
+            </div>
         </div>
-    </template>
-</div>
-
-<script>
-    document.addEventListener('alpine:init', () => {
-        Alpine.data('chatApp', () => ({
-            // State is now managed globally via showChat in body x-data
-            // We can just use the property since it's in scope, but we need to watch strictly?
-            // Actually, if we use x-data here, we create a nested scope.
-            // Better to NOT redefine x-data and just use the global one?
-            // Or use a data object.
-            // If we use x-data="chatApp", we have a new scope.
-            // We want to sync with `showChat`.
-            // Let's use `showChat` from parent (body) and internal logic for chat.
-
-            messages: [],
-            input: '',
-            loading: false,
-
-            async sendMessage() {
-                if (!this.input.trim()) return;
-
-                const userMsg = this.input;
-                this.messages.push({ role: 'user', text: userMsg });
-                this.input = '';
-                this.loading = true;
-
-                this.$nextTick(() => {
-                    const container = document.getElementById('chat-history');
-                    if (container) container.scrollTop = container.scrollHeight;
-                });
-
-                try {
-                    const res = await fetch('/api/ai/chat', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: userMsg, history: this.messages })
-                    });
-                    const data = await res.json();
-
-                    this.messages.push({ role: 'ai', text: data.response });
-                } catch (e) {
-                    this.messages.push({ role: 'ai', text: 'CONNECTION ERROR.' });
-                } finally {
-                    this.loading = false;
-                    this.$nextTick(() => {
-                        const container = document.getElementById('chat-history');
-                        if (container) container.scrollTop = container.scrollHeight;
-                    });
-                    // Reload if item added
-                    if (this.messages[this.messages.length - 1].text.includes("ADDED")) {
-                        setTimeout(() => window.location.reload(), 1500);
-                    }
-                }
-            }
-        }))
-    })
-</script>
+    </div>
+</template>

@@ -18,6 +18,19 @@ class Category(Base):
     slug = Column(String, unique=True, index=True)
     
     items = relationship("Item", back_populates="category")
+    subcategories = relationship("SubCategory", back_populates="category")
+
+class SubCategory(Base):
+    __tablename__ = "subcategories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    slug = Column(String, index=True) # Not unique globally, but unique per category ideally, or just unique slug. Let's make it unique slug for simplicity of mapping.
+    icon_path = Column(String, default="pack_generic.png")
+    category_id = Column(Integer, ForeignKey("categories.id"))
+
+    category = relationship("Category", back_populates="subcategories")
+
 
 class Item(Base):
     __tablename__ = "items"
