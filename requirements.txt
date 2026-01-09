@@ -8,3 +8,4 @@ sqlalchemy
 python-dotenv
 aiofiles
 itsdangerous
+pillow
